@@ -1,0 +1,123 @@
+Trace Packets using Wireshark for DNS and Answer the following Questions
+
+URL: http://www.ietf.org
+a) Locate the DNS query and response messages. Are they sent over UDP or TCP?
+b) What is the destination port for the DNS query message? What is the source port of DNS response message?
+c) To what IP address is the DNS query message sent? Use ipconfig to determine the IP address of your local DNS server. Are these two IP addresses the same?
+d) Examine the DNS query message. What “Type” of DNS query is it? Does the query message contain any “answers”?
+e) Examine the DNS response message. How many “answers” are provided? What does each of these answers contain?
+f) Consider the subsequent TCP SYN packet sent by your host. Does the destination IP address of the SYN packet correspond to any of the IP addresses provided in the DNS response message?
+g) This web page contains images. Before retrieving each image, does your host issue new DNS queries?
+
+Use nslookup –type=NS mit.edu and answer the following
+h) To what IP address is the DNS query message sent? Is this the IP address of your default local DNS server?
+i) Examine the DNS query message. What “Type” of DNS query is it? Does the query message contain any “answers”?
+j) Examine the DNS response message. What MIT name servers does the response message provide? Does this response message also provide the IP addresses of the MIT name servers?
+
+---
+
+This lab shifts focus from the application layer (HTTP) down to **DNS (Domain Name System)**, which translates human-readable domain names (like `ietf.org`) into machine-readable IP addresses.
+
+To easily isolate DNS packets in Wireshark, type **`dns`** into your top display filter bar.
+
+Let's break down exactly how to answer each question step-by-step.
+
+---
+
+## Part 1: Analyzing `www.ietf.org` in Wireshark
+
+### a) Transport Protocol (UDP vs TCP)
+
+* **How to find it:** Click on any DNS query line (labeled `Standard query 0x... A www.ietf.org`). Look at the middle pane just above the `Domain Name System (query)` row.
+* **Your Answer:** They are sent over **UDP** (User Datagram Protocol). DNS uses UDP because it is fast and lightweight, requiring no connection setup handshake for quick lookups.
+
+### b) Destination and Source Ports
+
+* **How to find it:** Click the query packet, expand the **User Datagram Protocol** line in the middle pane, and check the ports. Then click the response packet and do the same.
+* **Your Answer:** * The destination port for the DNS **query** is **53**.
+* The source port of the DNS **response** is **53**.
+* *(Note for test: Port 53 is the well-known standard port reserved worldwide for DNS services).*
+
+### c) Target IP Address vs Local DNS Server
+
+* **How to find it:** Look at the **Destination** column for your DNS query packet. Next, open your computer's Command Prompt (cmd) or Terminal, type `ip address` (or `nslookup` on any OS), and look for your **DNS Servers** IP address.
+* **Your Answer:** The query is sent to your local router or network's DNS resolver IP (e.g., `192.168.1.1` or `8.8.8.8`). **Yes, these two IP addresses are the same**, because your computer naturally routes all domain queries directly to your configured local DNS server.
+
+### d) Examining the DNS Query Message
+
+* **How to find it:** Click the DNS query packet. In the middle pane, expand **Domain Name System (query)** $\rightarrow$ **Queries** $\rightarrow$ **`www.ietf.org`**.
+* **Your Answer:** * The **Type** of query is **A** (which stands for Address record, used to map a hostname to an IPv4 address).
+* **No**, the query message does not contain any "answers". The Answers count field is `0` because your computer is the one asking the question; it doesn't have the answer yet.
+
+### e) Examining the DNS Response Message
+
+* **How to find it:** Click the DNS response packet (labeled `Standard query response 0x...`). In the middle pane, expand **Domain Name System (response)** and look for the **Answers** dropdown.
+* **Your Answer:** It usually provides **1 or 2 answers** (depending on whether the site uses a CDN or has multiple servers). Each answer contains the domain name, the type (A), the TTL (Time to Live), the data length, and the actual resolved **IPv4 Address** of the server.
+
+### f) Subsequent TCP SYN Packet
+
+* **How to find it:** Change your Wireshark filter bar from `dns` to **`tcp`**. Look at the very next packet sent right after your DNS resolution—it will be a `[SYN]` packet attempting to establish an HTTP connection. Check its **Destination IP**.
+* **Your Answer:** **Yes**, the destination IP address of the TCP SYN packet matches exactly one of the resolved IP addresses provided in the DNS response message. Your browser immediately uses the IP it just learned to start talking to the website.
+
+### g) DNS Queries for Embedded Images
+
+* **Your Answer:** **No**, your host does not issue new DNS queries for each image.
+* **Explanation:** Because all the images on `www.ietf.org` are hosted on the exact same server as the main website, your computer already knows that server's IP address. It caches the DNS result locally, preventing unnecessary network traffic.
+
+---
+
+## Part 2: Running `nslookup –type=NS mit.edu`
+
+For this part, you will open your computer's Command Prompt/Terminal, type `nslookup –type=NS mit.edu` and press Enter. This tells the system: *"Find the Name Servers (NS) responsible for managing the mit.edu domain."*
+
+### h) Target IP Address
+
+* **Your Answer:** The query is sent to your **default local DNS server IP address** (the same IP address found in question **c**, such as your home router or school DNS gateway).
+
+### i) Examining the nslookup Query Message
+
+* **Your Answer:** * The **Type** of this DNS query is **NS** (Name Server record).
+* **No**, the query message contains `0` answers because it is an outbound question originating from your machine.
+
+### j) Examining the DNS Response Message
+
+* **Your Answer:** * The response provides the authoritative name servers for MIT, which typically include strings like **`w20ns.mit.edu`**, **`bitsy.mit.edu`**, and **`astronomy.mit.edu`**.
+* **Yes**, standard DNS responses include an "Additional Records" section that explicitly attaches the corresponding IPv4 and IPv6 addresses for those specific name servers so your computer knows how to reach them immediately if needed.
+
+---
+
+This is an excellent real-world output! Seeing `akam.net` instead of `mit.edu` in the nameserver names is a very common scenario for massive websites, and it gives you a fantastic opportunity to impress your teacher tomorrow.
+
+Let’s fill in your exact answers for **h, i, and j** using the live data from your terminal:
+
+---
+
+### h) To what IP address is the DNS query message sent? Is this the IP address of your default local DNS server?
+
+* **Your Answer:** The query was sent to **`127.0.0.53`** on port **53** (indicated by `127.0.0.53#53`).
+* **Explanation:** Yes, this is your local default DNS resolver. On many modern Linux systems (like Ubuntu), `127.0.0.53` is the local loopback IP address for a service called `systemd-resolved`. It acts as a local middleman that intercepts your DNS requests and forwards them to your actual network router or ISP DNS servers.
+
+---
+
+### i) Examine the DNS query message. What “Type” of DNS query is it? Does the query message contain any “answers”?
+
+* **Your Answer:** The query **Type** is **NS** (Name Server), because you explicitly specified `-type=NS` in your command. No, the outbound query message itself contains zero answers, as it is a request for information.
+
+---
+
+### j) Examine the DNS response message. What MIT name servers does the response message provide? Does this response message also provide the IP addresses of the MIT name servers?
+
+* **Your Answer:** The response provides the following nameservers:
+* `usw2.akam.net.`
+* `asia1.akam.net.`
+* `use2.akam.net.`
+* `use5.akam.net.`
+* `ns1-173.akam.net.`
+* `asia2.akam.net.`
+* `eur5.akam.net.`
+* `ns1-37.akam.net.`
+
+
+* **Does it provide the IP addresses?** In *this specific terminal snippet*, **no**, the direct IP addresses are not printed on the screen because your local resolver gave a quick "Non-authoritative answer" mapping.
+
+---
