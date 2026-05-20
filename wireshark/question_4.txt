@@ -1,0 +1,155 @@
+Trace Hypertext Transfer Protocol
+
+Retrieving Long Documents
+URL: http://gaia.cs.umass.edu/wireshark-labs/HTTP-wireshark-file3.html
+a. How many HTTP GET request messages were sent by your browser?
+b. How many data-containing TCP segments were needed to carry the single HTTP Response?
+c. What is the status code and phrase associated with the response to the HTTP GET Request?
+
+HTML Documents with Embedded Objects
+http://gaia.cs.umass.edu/wireshark-labs/HTTP-wireshark-file4.html
+a. How many HTTP GET request messages were sent by your browser? To which Internet addresses were
+these GET requests sent?
+b. Can you tell whether your browser downloaded the two images serially, or whether they were
+downloaded from the two web sites in parallel? Explain.
+
+HTTP Authentication
+URL:
+http://gaia.cs.umass.edu/wireshark-labs/protected_pages/HTTP-wireshark-file5.html
+username: wireshark-students
+password: network
+a. What is the server’s response (status code and phrase) in response to the initial HTTP GET message
+from your browser?
+b. When your browser sends the HTTP GET message for the second time, what new field is included in
+the HTTP GET message?
+
+---
+
+Let's tackle the first URL (`HTTP-wireshark-file3.html`) right now.
+
+---
+
+## Part 3: Retrieving Long Documents
+
+This webpage contains a very long copy of the US Bill of Rights. Because the text is so large, it cannot fit into a single network packet. It has to be chopped up into pieces.
+
+### Step 1: Capture the Traffic
+
+1. Open Wireshark and click the **Blue Shark Fin** button to start a fresh capture.
+2. Open a **New Incognito Window** in your browser.
+3. Paste the URL and press Enter:
+**[http://gaia.cs.umass.edu/wireshark-labs/HTTP-wireshark-file3.html](http://gaia.cs.umass.edu/wireshark-labs/HTTP-wireshark-file3.html)**
+4. Once the long text loads on your screen, go back to Wireshark and hit the **Red Square** to stop.
+5. In the display filter bar, type **`http`** and press Enter.
+
+---
+
+### Step 2: Answering the Questions
+
+#### **a. How many HTTP GET request messages were sent by your browser?**
+
+* **How to check:** Look at your filtered packet list. Count how many lines say `GET` in the Info column.
+* **Your Answer:** **Exactly 1.** Your browser only needs to ask for the page once.
+
+#### **b. How many data-containing TCP segments were needed to carry the single HTTP Response?**
+
+* **How to check:** 1. Click on the line that says **`HTTP/1.1 200 OK`**.
+2. Look at the **Middle Pane**. You will see the standard `Hypertext Transfer Protocol` block, but right *above* or *inside* it, Wireshark is smart enough to group the pieces for you.
+3. Look for a tab or text line that says **`[TCP segments reassembled into a single PDU]`** or look down at the bottom pane for a tab named **`Reassembled TCP`**. It will list a set of frame numbers (e.g., `#340, #341, #342`). Count how many frames are listed there.
+* **Your Answer:** Typically, it takes **4 data-containing TCP segments** to carry this specific file (depending on your network's Maximum Transmission Unit, it is usually 3 or 4 segments). Check the exact count of listed frames in that bracket on your screen!
+
+#### **c. What is the status code and phrase associated with the response to the HTTP GET Request?**
+
+* **How to check:** Look at the Info column of that final response packet.
+* **Your Answer:** The status code and phrase is **200 OK**. Even though the file was split into multiple TCP segments at the transport layer, at the application layer (HTTP), it is still treated as one single successful `200 OK` response.
+
+---
+
+Let's handle the 4th URL: **HTML Documents with Embedded Objects**.
+
+This webpage has text, but it also contains two specific images embedded inside it. One image is hosted on the same UMass server, and the other is hosted on a completely different server (`www.awl.com`). We are going to look at how a browser requests multiple things at once.
+
+---
+
+## Part 4: HTML Documents with Embedded Objects
+
+### Step 1: Capture the Traffic
+
+1. Open Wireshark and click the **Blue Shark Fin** to start a fresh capture (Continue without saving).
+2. Open a **New Incognito Window** in your browser.
+3. Paste this exact URL and press Enter:
+**[http://gaia.cs.umass.edu/wireshark-labs/HTTP-wireshark-file4.html](http://gaia.cs.umass.edu/wireshark-labs/HTTP-wireshark-file4.html)**
+4. Once the page loads and you see the images on your screen, go back to Wireshark and hit the **Red Square** to stop.
+5. Type **`http`** into the display filter bar and press Enter.
+
+---
+
+### Step 2: Answering the Questions
+
+#### **a. How many HTTP GET request messages were sent by your browser? To which Internet addresses were these GET requests sent?**
+
+* **How to find the count:** Count how many total lines say `GET` in your filtered packet list.
+* **Your Answer:** **3 GET requests** were sent in total.
+1. The 1st GET is for the main HTML file: `/wireshark-labs/HTTP-wireshark-file4.html`
+2. The 2nd GET is for the first image: `pearson.png`
+3. The 3rd GET is for the second image: `8E_cover.jpg`
+
+
+* **How to find the Internet Addresses (IPs):** 1. Look at the **Destination** column for each of those 3 GET packets.
+2. The first two GET requests (the HTML file and `pearson.png`) were sent to the UMass server IP address (usually looks like `128.119.245.12`).
+3. The third GET request (`8E_cover.jpg`) was sent to a different IP address belonging to the `www.awl.com` server.
+
+---
+
+#### **b. Can you tell whether your browser downloaded the two images serially, or whether they were downloaded from the two web sites in parallel? Explain.**
+
+* **How to find it:** Look at the **Time** column for the GET requests of the two images (`pearson.png` and `8E_cover.jpg`).
+* **Your Answer:** They were downloaded in **parallel**.
+* **Explanation:** If you look closely at the timestamps in the **Time** column for the image GET requests, you will notice they were issued almost *identically at the exact same fraction of a second* (often just microseconds apart). The browser doesn't wait for the first image to completely finish downloading before asking for the second; it opens up multiple connections to fetch them both at the same time to make the website load faster.
+
+---
+
+Let’s smash out this last URL: **HTTP Authentication**.
+
+This webpage is password-protected. We are going to look at how a browser handles security when a server denies access, and how it securely passes your credentials over the network.
+
+---
+
+## Part 5: HTTP Authentication
+
+### Step 1: Capture the Traffic
+
+1. Open Wireshark and hit the **Blue Shark Fin** button to start a fresh capture (Continue without saving).
+2. Open a **New Incognito Window** in your browser.
+3. Paste the URL and press Enter:
+**[http://gaia.cs.umass.edu/wireshark-labs/protected_pages/HTTP-wireshark-file5.html](http://gaia.cs.umass.edu/wireshark-labs/protected_pages/HTTP-wireshark-file5.html)**
+4. A pop-up box will appear on your screen asking for a username and password.
+5. Type in the credentials exactly:
+* **Username:** `wireshark-students`
+* **Password:** `network`
+
+
+6. Press OK. Once the page text loads, go back to Wireshark and hit the **Red Square** to stop.
+7. Type **`http`** into the display filter bar and press Enter.
+
+You will see two distinct GET requests and two distinct responses.
+
+---
+
+### Step 2: Answering the Questions
+
+#### **a. What is the server’s response (status code and phrase) to the initial HTTP GET message from your browser?**
+
+* **How to find it:** Click on the **very first** server response packet (the one that came *before* you typed in the password). Look at the Info column or the middle pane.
+* **Your Answer:** The response is **401 Unauthorized**.
+* **Explanation:** When you first try to access the page, your browser doesn't know it needs a password, so it sends a blank request. The server blocks it with a `401 Unauthorized` status code, which tells your browser: *"Hold on, you need to prompt the user for a username and password before I show you this data."*
+
+---
+
+#### **b. When your browser sends the HTTP GET message for the second time, what new field is included in the HTTP GET message?**
+
+* **How to find it:** Click on the **second** `GET` packet in your list (the one sent *after* you typed the password and clicked OK). Expand the `Hypertext Transfer Protocol` block in the middle pane and look down the headers.
+* **Your Answer:** The new field included is **`Authorization:`**.
+* **Bonus Detail for Extra Marks:** If you look right next to or below that `Authorization:` line, you will see it says **`Credentials: d2lyZXNoYXJrLXN0dWRlbnRzOm5ldHdvcms=`** (or something similar) and next to it, Wireshark decodes it to show `[Basic wireshark-students:network]`.
+
+---
