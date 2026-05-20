@@ -1,0 +1,108 @@
+Trace Internet Protocol and Internet Control Message Protocol using Wireshark.
+
+a) Select the first ICMP Echo Request message sent by your computer, and expand the Internet Protocol part of the packet in the packet details window. What is the IP address of your computer?
+
+b) Within the IP packet header, what is the value in the upper layer protocol field?
+
+c) How many bytes are in the IP header? How many bytes are in the payload of theIP datagram? Explain how you determined the number of payload bytes.
+
+d) Has this IP datagram been fragmented? Explain how you determined whether or not the datagram has been fragmented.
+
+e) Which fields in the IP datagram always change from one datagram to the next within this series of ICMP messages sent by your computer?
+
+f) Which fields stay constant?
+
+g) Find the first ICMP Echo Request message that was sent by your computer after you changed the Packet Size to 2000 (Use command ping –s 2000 www.yahoo.com to change the MTU of the packet). Has that message been fragmented across more than one IP datagram
+
+h) Write down the first fragment of the fragmented IP datagram. What information in the IP header indicates that the datagram been fragmented? What information in the IP header indicates whether this is the first fragment versus a latter fragment? How long is this IP datagram?
+
+i) What information in the IP header indicates that this is not the first datagram fragment? Are there more fragments? How can you tell?
+
+j) What fields change in the IP header between the first and second fragment?
+
+---
+
+This lab shifts from local network configuration (DHCP) down to the **Network Layer (IP)** and how data actually travels across routers. You are also exploring **ICMP (Internet Control Message Protocol)**, which is the protocol used by the famous `ping` command.
+
+To generate this traffic, you open a terminal and run a ping command (e.g., `ping www.yahoo.com`).
+
+To filter your view in Wireshark, type **`icmp`** into the display filter bar.
+
+---
+
+### a) Your Computer's IP Address
+
+* **How to find it:** Click on the very first **Echo (ping) request** message in the top pane. Expand the **Internet Protocol Version 4** block in the middle pane.
+* **Your Answer:** Look at the **Source:** field. It will display your current local IP address (e.g., `192.168.31.56`).
+
+### b) Upper Layer Protocol Field
+
+* **How to find it:** In that same expanded IP block, look for the field labeled **Protocol**.
+* **Your Answer:** The value is **ICMP (1)**. This tells the network layer that the data inside the IP envelope needs to be handed up to the ICMP protocol handler.
+
+### c) IP Header vs. Payload Bytes
+
+* **How to find it:** Look inside the IP block for **Header Length** and **Total Length**.
+* **Your Answer:** * **IP Header Bytes:** Typically **20 bytes** (this is the standard size for an IPv4 header without options).
+* **Payload Bytes:** Calculated by taking the **Total Length** and subtracting the **Header Length**.
+* **Explanation:** If your Total Length says 60 bytes and Header Length is 20 bytes, your payload calculation is:
+
+Payload = Total Length - Header Length = 60 - 20 = 40 bytes
+
+---
+
+### d) Detecting Standard Fragmentation
+
+* **How to find it:** Look inside the IP block and expand the **Flags** and **Fragment Offset** fields.
+* **Your Answer:** **No**, standard ping datagrams are not fragmented.
+* **Explanation:** You can tell because the **More Fragments** flag is set to `0` (Not set) and the **Fragment Offset** is exactly `0`. This means the packet is entirely self-contained.
+
+---
+
+### e) Fields that ALWAYS Change Between Pings
+
+* **Your Answer:** 1. **Identification:** Every single IP packet gets a unique, sequential ID number so the receiver can track them.
+2. **Time to Live (TTL):** Decrements if paths change, though in a steady stream, the outbound TTL stays uniform while the **Header Checksum** changes automatically because the Identification field changed.
+
+### f) Fields that Stay Constant Between Pings
+
+* **Your Answer:** **Source IP**, **Destination IP**, **Version** (4), **Header Length** (20), and **Protocol** (1-ICMP).
+
+---
+
+## The Big Concept: Fragmentation (`ping -s 2000`)
+
+When you run `ping -s 2000 www.yahoo.com`, you are forcing the payload to be 2000 bytes. Because standard Ethernet can only handle a maximum of 1500 bytes at a time (called the **MTU** or Maximum Transmission Unit), the router is forced to chop this single message into **two separate fragments**.
+
+### g) Has the 2000-byte message been fragmented?
+
+* **Your Answer:** **Yes.** Because 2000 bytes exceeds the standard network MTU of 1500 bytes, Wireshark will show multiple IP packets arriving to deliver this single ping.
+
+---
+
+### h) Examining the FIRST Fragment
+
+* **How to find it:** Click the first piece of the split packet in your list.
+* **Fragmentation Indicator:** The **Flags** field has the **More Fragments: Set (1)** bit turned on.
+* **First vs Latter Indicator:** The **Fragment Offset** is exactly **0**. This tells the receiver: *"This packet contains more pieces, but start rebuilding from the very beginning (index 0)."*
+* **Total Length:** It will read exactly **1500 bytes** (20 bytes of IP header + 1480 bytes of data).
+
+---
+
+### i) Examining the SECOND Fragment
+
+* **Not the First Indicator:** The **Fragment Offset** is **1480** (not 0). This tells the receiver to append this data right after the first 1480 bytes it already received.
+* **Are there more fragments?** **No.** You can tell because the **More Fragments** flag is now **Not Set (0)**, which signifies this is the absolute final piece of the puzzle.
+
+---
+
+### j) What fields change between the First and Second Fragment?
+
+When a packet is sliced up, these crucial fields adapt so they can be reassembled correctly:
+
+1. **Total Length:** The first fragment is maxed out at `1500`, while the second fragment carries the remaining leftover bytes (typically around `548` bytes).
+2. **Flags:** The first fragment has `More Fragments = 1`, while the second fragment has `More Fragments = 0`.
+3. **Fragment Offset:** The first is `0`, while the second changes to `1480`.
+4. **Header Checksum:** Recalculated for each piece because the headers now contain different lengths and offsets.
+
+> **CRITICAL Note for your Test:** The **Identification** field stays EXACTLY THE SAME across both fragments. That is how the receiving computer knows these two separate packets actually belong together to form the same single message!
