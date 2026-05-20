@@ -1,0 +1,122 @@
+First, let's open up the webpage so Wireshark has data to capture.
+
+### Step 1: Open the website
+
+1. Open your web browser (like Chrome, Firefox, or Edge).
+2. Copy and paste this exact link into your address bar and press Enter:
+**[http://gaia.cs.umass.edu/wireshark-labs/HTTP-wireshark-file1.html]()**
+3. Leave that browser window open.
+
+---
+
+### Step 2: Set up Wireshark to record
+
+1. Open the **Wireshark** application on your computer.
+2. You will see a list of connections on the main screen (like *Wi-Fi*, *Ethernet*, or *Local Area Connection*). Look for the one that has a jagged line moving next to it—that means it's active.
+3. **Double-click** on that active connection (usually **Wi-Fi**).
+4. Suddenly, the screen will fill up with hundreds of colorful lines. Wireshark is now recording your internet traffic!
+
+---
+
+### Step 3: Refresh the webpage to capture it
+
+1. Go back to your web browser where you opened that UMass website.
+2. **Refresh/Reload** the page (press `F5` or click the circular arrow icon).
+3. Go back to **Wireshark**.
+4. Look at the very top left corner of the Wireshark window and click the **Red Square button** to STOP the capture.
+
+---
+
+### Step 4: Find our webpage traffic
+
+Right now, you are looking at thousands of confusing lines. Let's hide everything except our webpage.
+
+1. At the very top of the Wireshark window, there is a long white bar that says **"Apply a display filter..."**.
+2. Click inside that bar, type the letters **`http`** (all lowercase), and press **Enter**.
+3. The background of the bar should turn green, and your screen will clean up drastically. You will now only see a few lines.
+
+---
+
+### Step 5: Answering Question (a) and (b)
+
+1. Look at the top pane (the list of packets). Look down the **Info** column for a line that starts with **`GET /wireshark-labs/HTTP-wireshark-file1.html...`**.
+2. **Click once** on that `GET` line to highlight it.
+3. Now look at the **Middle Pane** of your screen. You will see a list of rows with little arrows/triangles next to them.
+4. Look for the row that says **`Hypertext Transfer Protocol`** and click the little arrow next to it to expand it.
+
+**Let's find your answers here:**
+
+* **Your Browser's HTTP Version:** Look at the very first line right under *Hypertext Transfer Protocol*. It will say something like `GET /wireshark-labs/... HTTP/1.1`. That **HTTP/1.1** is your answer to part 1.
+* **Accepted Languages (Question b):** Scroll down slightly inside that same expanded *Hypertext Transfer Protocol* section. Look for a line that says **`Accept-Language:`**. Whatever letters are next to it (like `en-US,en`) is your answer for the language!
+
+---
+
+### Step 6: Answering Questions (c), (d), and (e)
+
+1. Go back up to the **Top Pane** list.
+2. Right below the `GET` line you just clicked, you should see a line sent from the server that says **`HTTP/1.1 200 OK`** in the Info column. **Click on it.**
+3. Look at the **Middle Pane** again. Ensure the **`Hypertext Transfer Protocol`** section is still expanded.
+
+**Let's find the rest of your answers here:**
+
+* **Status Code (Question c):** Look at the very first line under the protocol drop-down. It will say **`Status Code: 200`** or `HTTP/1.1 200 OK`. Your status code is **200 OK**.
+* **Last Modified Time (Question d):** Scroll down a bit in those details. Look for a line that starts with **`Last-Modified:`**. It will show a date and time (e.g., *Fri, 22 May 2026...*). Write down exactly what your screen says.
+* **Bytes Returned (Question e):** Look further down for a line that says **`Content-Length:`**. The number right next to it is the exact number of bytes returned to your browser.
+
+---
+
+Let's move on to the second URL! This one is designed specifically to test how your browser handles a **Conditional GET** and how caching works.
+
+To get the exact results your teacher's question expects, we need to make sure we don't accidentally send a conditional request on the *first* attempt.
+
+Follow these steps exactly to capture the clean data:
+
+---
+
+### Step 1: Prepare Your Capture
+
+1. Open Wireshark and click the **Blue Shark Fin** button in the top left to start a brand new capture. (Click "Continue without Saving" if it asks).
+2. Open a **New Incognito Window** (or Private Browsing tab) in your browser. This ensures no old copies of this second file are hidden in your browser's memory.
+3. Copy and paste this second URL into the address bar, **but do not press Enter yet**:
+**[http://gaia.cs.umass.edu/wireshark-labs/HTTP-wireshark-file2.html](http://gaia.cs.umass.edu/wireshark-labs/HTTP-wireshark-file2.html)**
+
+---
+
+### Step 2: The Two-Step Capture Process
+
+**Action 1 (The First Request):**
+
+1. Press **Enter** on your keyboard to load the website for the first time. You should see the text load on the screen.
+2. Wait 5 seconds.
+
+**Action 2 (The Second Request):**
+3. Now, click the **Refresh/Reload** button on your browser (or press `F5`).
+4. Go straight to Wireshark and click the **Red Square** button to stop the capture.
+5. Type **`http`** into the top display filter bar and press Enter.
+
+You should now see **two** `GET` lines and **two** response lines in your top pane list.
+
+---
+
+### Step 3: Finding Your Answers
+
+#### **a. Inspect the contents of the first HTTP GET request. Do you see an “IF-MODIFIED-SINCE” line?**
+
+* **How to find it:** Click on the **very first** `GET /wireshark-labs/HTTP-wireshark-file2.html` line at the top of your list. Look down the rows in the middle pane under `Hypertext Transfer Protocol`.
+* **Your Answer:** **No.** There is no `If-Modified-Since` header present because the browser has never fetched this file before and has nothing to compare it against.
+
+#### **b. Inspect the contents of the first server response. Did the server explicitly return the contents of the file? How can you tell?**
+
+* **How to find it:** Click on the first server response line right below your first GET. Look at the **Info** column and the middle pane details.
+* **Your Answer:** **Yes**, the server explicitly returned the contents of the file. We can tell because the status code is **200 OK**, and at the very bottom of the middle pane, you will see a dropdown called **"Line-based text data"** or **"File Data"** which contains the actual HTML text of the webpage.
+
+#### **c. Inspect the contents of the second HTTP GET request. Do you see an “IF-MODIFIED-SINCE:” line? If so, what information follows it?**
+
+* **How to find it:** Click on the **second** `GET` line in your top list (the one from when you refreshed). Expand `Hypertext Transfer Protocol` in the middle pane and scroll down.
+* **Your Answer:** **Yes.** There is now an `If-Modified-Since` line. The information following it is the exact timestamp of when the file was last modified on the server (e.g., `If-Modified-Since: Wed, 20 May 2026 12:00:00 GMT`). Your browser copied this date from the first response it received.
+
+#### **d. What is the HTTP status code and phrase returned from the server in response to this second HTTP GET? Did the server explicitly return the contents of the file? Explain.**
+
+* **How to find it:** Click on the **second** server response line (the very last HTTP packet in your list). Look at the status line in the middle pane.
+* **Your Answer:** The status code and phrase is **304 Not Modified**. No, the server **did not** explicitly return the contents of the file.
+* **Explanation:** Because the file had not changed since the timestamp sent in the browser's `If-Modified-Since` header, the server sent a lightweight `304` response telling the browser it can save time and bandwidth by simply loading the webpage copy it already stored in its local cache.
