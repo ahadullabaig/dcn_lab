@@ -1,0 +1,126 @@
+Trace Packets using Wireshark for Dynamic Host Configuration Protocol (DHCP) and Answer the following Questions:
+
+Use dhclient –r for releasing ip address, dhclient <eth0> for renewing ipaddress
+
+Are DHCP messages sent over UDP or TCP?
+a) What is the link-layer (e.g., Ethernet) address of your host?
+b) What values in the DHCP discover message differentiate this message from the DHCP request message?
+c) What is the value of the Transaction-ID in each of the first four discover/Offer/Request/ACK) DHCP messages? What are the values of the Transaction-ID in the second set (Request/ACK) set of DHCP messages? What is the purpose of the Transaction-ID field?
+d) A host uses DHCP to obtain an IP address, among other things. But a host’s IP address is not confirmed until the end of the four-message exchange! If the IP address is not set until the end of the four-message exchange, then what values are used in the IP datagrams in the four-message exchange? For each of the four DHCP messages (Discover/Offer/Request/ACK DHCP), indicate the source and destination IP addresses that are carried in the encapsulating IP datagram.
+e) What is the IP address of your DHCP server?
+f) What IP address is the DHCP server offering to your host in the DHCP Offer message? Indicate which DHCP message contains the offered DHCP address.
+g) In the example screenshot in this assignment, there is no relay agent between the host and the DHCP server. What values in the trace indicate the absence of a relay agent? Is there a relay agent in your experiment? If so what is the IP address of the agent?
+h) Explain the purpose of the lease time. How long is the lease time in your experiment?
+
+---
+
+This lab covers **DHCP (Dynamic Host Configuration Protocol)**, the protocol your computer uses to automatically request and secure an IP address from your network router when you connect.
+
+To clear your current IP and request a fresh one for Wireshark to record, you use the terminal commands provided:
+
+* `sudo dhclient -r` (Releases your current IP address)
+* `sudo dhclient wlo1` (Renews it—replace `wlo1` or `eth0` with your active interface name)
+
+In Wireshark, type **`dhcp`** or **`bootp`** (the older protocol name DHCP is built on) into the display filter bar to see the packets.
+
+DHCP uses a famous 4-step process known by the acronym **DORA**: **D**iscover, **O**ffer, **R**equest, **A**ck.
+
+Here is how to answer each question step-by-step for your test:
+
+---
+
+### Transport Layer Protocol
+
+* **Your Answer:** DHCP messages are sent over **UDP**.
+* *Note for Viva:* The client sends requests from UDP source port **68** to the server's destination port **67**.
+
+---
+
+### a) What is the link-layer (Ethernet) address of your host?
+
+* **How to find it:** Click on the **DHCP Discover** packet. In the middle pane, look at the very top under **Ethernet II**. Look for **Source:**.
+* **Your Answer:** It will be a 12-digit hexadecimal physical address (e.g., `46:5e:6a:ab:85:fc`). This is your computer's **MAC address**.
+
+---
+
+### b) What values differentiate a Discover message from a Request message?
+
+* **How to find it:** Expand **Dynamic Host Configuration Protocol** $\rightarrow$ **DHCP Options** $\rightarrow$ **Option: (53) DHCP Message Type**.
+* **Your Answer:** The **DHCP Message Type** value explicitly differentiates them:
+* In the first packet, Option 53 has a value of **1 (DHCP Discover)**.
+* In the third packet, Option 53 has a value of **3 (DHCP Request)**.
+
+---
+
+### c) Transaction-ID Field Questions
+
+* **How to find it:** Click any DHCP packet and look near the top of the *Dynamic Host Configuration Protocol* block for the **Transaction ID** line (e.g., `Transaction ID: 0x3a2b1c4d`).
+* **Your Answers:**
+* **Value in first four (DORA) messages:** The Transaction ID is **exactly the same** across all four messages (Discover, Offer, Request, ACK).
+* **Value in subsequent Request/ACK messages:** If you renew later, a *new* unique transaction ID is generated, but it will match across that specific pair.
+* **Purpose of the field:** It matches requests with responses. Because a network can have multiple devices requesting IP addresses at the exact same time, the Transaction ID ensures your host knows a received "Offer" or "ACK" packet belongs specifically to *it* and not a classmate's machine.
+
+---
+
+### d) Source and Destination IP Addresses during the Exchange
+
+Because your host does not have an IP address yet during this process, it must communicate using network-wide broadcasts.
+
+Look at the **Source** and **Destination** columns in Wireshark for each packet:
+
+| Message Type | Source IP | Destination IP | Explanation |
+| --- | --- | --- | --- |
+| **DHCP Discover** | `0.0.0.0` | `255.255.255.255` | Host has no IP (`0.0.0.0`), so it broadcasts to everyone on the network. |
+| **DHCP Offer** | Server IP (e.g., `192.168.31.1`) | `255.255.255.255` or Host IP | The server broadcasts its offer back to the network. |
+| **DHCP Request** | `0.0.0.0` | `255.255.255.255` | Host broadcasts to tell *all* servers it accepted this specific offer. |
+| **DHCP ACK** | Server IP (e.g., `192.168.31.1`) | `255.255.255.255` or Host IP | Server broadcasts final confirmation. |
+
+---
+
+### e) What is the IP address of your DHCP server?
+
+* **How to find it:** Click the **DHCP Offer** or **ACK** packet. Expand the DHCP options list and look for **Option (54): DHCP Server Identifier**.
+* **Your Answer:** It is typically your home or lab router's gateway IP address (e.g., **`192.168.31.1`** or `192.168.1.1`).
+
+---
+
+### f) What IP address is the server offering? Which message contains it?
+
+* **How to find it:** Click on the **DHCP Offer** packet. In the middle pane, look for the field labeled **Your (client) IP address:**.
+* **Your Answer:** The address is found inside the **DHCP Offer** message (and confirmed in the ACK). Write down the IP listed on your screen (e.g., `Your (client) IP address: 192.168.31.56`).
+
+---
+
+### g) Relay Agent Configuration
+
+A relay agent is used if the DHCP server is located on a completely different network/subnet.
+
+* **How to find it:** Look inside any of the DHCP packets for a field named **Relay agent IP address** (or `giaddr`).
+* **Your Answer:** The value in the trace is **`0.0.0.0` (No Agent)**. This indicates that there is **no relay agent** present in your experiment, meaning your host and the DHCP server are sitting on the exact same local area network (LAN).
+
+---
+
+### h) Purpose of the Lease Time
+
+* **Purpose:** The lease time is an expiration timer on your assigned IP address. It prevents network addresses from being permanently wasted. If a user disconnects or leaves the room, their IP lease eventually expires, allowing the router to reclaim that IP address and give it to someone else.
+* **How to find your duration:** Click the **DHCP ACK** packet. Go to the options block at the bottom and look for **Option (51): IP Address Lease Time**.
+* **Your Answer:** It will display a number of seconds (e.g., `86400 seconds`, which equates to exactly **24 hours**). Write down the exact duration showing on your console!
+
+---
+i)
+
+### 1. What is the purpose of the DHCP release message?
+
+The purpose of the **DHCP Release message** (`dhclient -r`) is for the client computer to explicitly tell the DHCP server: *"Hey, I am disconnecting from the network or turning off, so I am giving this IP address back to you early."*
+
+* **Why this matters:** Instead of making the server wait for hours for the "Lease Time" to naturally expire, a release message allows the DHCP server to instantly put that IP address back into its available pool. This allows another device connecting to the network to use it immediately, preventing the network from running out of available IP addresses.
+
+---
+
+### 2. Does the DHCP server issue an acknowledgment of receipt of the client’s DHCP Release request?
+
+**No, the DHCP server does not send an acknowledgment for a Release message.**
+
+* **How it works underneath:** The DHCP Release message is sent as a unacknowledged, one-way notification from the client to the server. Once the client sends the Release packet, it immediately clears its own IP settings and stops listening on that network interface. It does not wait around for a confirmation from the server.
+
+---
